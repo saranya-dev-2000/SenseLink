@@ -1,97 +1,202 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 🚀 SenseLink
 
-# Getting Started
+**IoT Bluetooth Sensor Controller**
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+SenseLink is a modern React Native mobile application designed for Bluetooth-enabled IoT devices. It provides real-time device monitoring, command execution, communication logs, and a clean dashboard experience.
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 📱 Screenshots
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### Scan Screen
+Discover and connect to nearby Bluetooth devices.
 
-```sh
-# Using npm
-npm start
+### Control Dashboard
+Monitor sensor values and send commands.
 
-# OR using Yarn
-yarn start
+### Communication Logs
+Track all sent and received messages.
+
+> Add screenshots in `/assets/screenshots`
+
+---
+
+## ✨ Features
+
+### 📡 Bluetooth Device Scanning
+- Scan nearby Bluetooth devices
+- Display signal strength (RSSI)
+- Connect and disconnect devices
+
+### 🎛 Device Control
+- Quick command actions
+- Custom command support
+- Real-time communication
+
+### 📊 Live Sensor Monitoring
+- Temperature monitoring
+- Humidity monitoring
+- Battery monitoring
+- Live updates
+
+### 📜 Communication Logs
+- Sent messages history
+- Received messages history
+- Timestamp tracking
+- Log filtering
+- Clear logs support
+
+### 🎨 Modern UI
+- Dark IoT dashboard theme
+- Responsive design
+- Smooth navigation
+- Clean user experience
+
+---
+
+## 🏗 Architecture
+
+```text
+UI Screens
+     |
+Bluetooth Context
+     |
+IBluetoothService
+     |
+-------------------------
+|                       |
+MockBluetoothService   BLEService
 ```
 
-## Step 2: Build and run your app
+The application uses a service abstraction layer which allows switching between mock devices and real BLE devices without affecting the UI.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+---
 
-### Android
+## 🛠 Tech Stack
 
-```sh
-# Using npm
-npm run android
+### Frontend
+- React Native CLI
+- TypeScript
+- React Navigation
+- React Native Paper
 
-# OR using Yarn
-yarn android
+### State Management
+- React Context API
+
+### Bluetooth
+- react-native-ble-plx
+- Mock Bluetooth Service
+
+### Architecture
+- Clean Architecture
+- Service Layer Pattern
+- Reusable Components
+
+---
+
+## 📂 Project Structure
+
+```text
+src/
+│
+├── components/
+├── screens/
+│   ├── Scan
+│   ├── Control
+│   └── Logs
+│
+├── context/
+├── services/
+│   ├── interfaces/
+│   ├── BluetoothService
+│   └── MockBluetoothService
+│
+├── navigation/
+├── constants/
+├── hooks/
+└── utils/
 ```
 
-### iOS
+---
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+## 🚀 Getting Started
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+### Install Dependencies
 
-```sh
-bundle install
+```bash
+npm install
 ```
 
-Then, and every time you update your native dependencies, run:
+### Run Android
 
-```sh
-bundle exec pod install
+```bash
+npx react-native run-android
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+### Start Metro
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+```bash
+npx react-native start
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## 📦 Version
 
-## Step 3: Modify your app
+### v1.0.0
 
-Now that you have successfully run the app, let's make changes!
+Initial Release
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+Features included:
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+- BLE device scanning
+- Device connection management
+- Mock Bluetooth communication
+- Real-time sensor monitoring
+- Quick command controls
+- Custom command support
+- Communication logs
+- Dark IoT dashboard UI
+- Service abstraction architecture
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+---
 
-## Congratulations! :tada:
+## 🔮 Future Roadmap
 
-You've successfully run and modified your React Native App. :partying_face:
+### v1.1.0
+- Real BLE device integration
+- BLE simulator testing
+- Settings screen
+- Device information page
 
-### Now what?
+### v1.2.0
+- Sensor charts
+- CSV export
+- Device history
+- Auto reconnect
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+### v2.0.0
+- ESP32 integration
+- Cloud synchronization
+- User authentication
+- Multi-device support
 
-# Troubleshooting
+---
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## 👨‍💻 Developer
 
-# Learn More
+Developed using React Native CLI and TypeScript.
 
-To learn more about React Native, take a look at the following resources:
+Built as a portfolio project showcasing:
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- Bluetooth Communication
+- IoT Application Design
+- Real-Time Data Handling
+- Mobile App Architecture
+- Modern UI Development
+
+---
+
+## 📄 License
+
+MIT License
