@@ -7,16 +7,27 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { State } from 'react-native-ble-plx';
-import BluetoothService, {
+import { MockBluetoothService } from '../services/MockBluetoothService';
+import {
+  BluetoothConnectionStatus,
   BluetoothDeviceInfo,
-} from '../services/BluetoothService';
+  CommunicationLog,
+  IBluetoothService,
+  SensorData,
+} from '../services/interfaces/IBluetoothService';
 
-export type ConnectionStatus =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'disconnecting';
+export type ConnectionStatus = BluetoothConnectionStatus;
+
+export type CommunicationStatus =
+  | 'idle'
+  | 'listening'
+  | 'sending'
+  | 'error';
+
+export type CommunicationMessage = CommunicationLog;
+
+const MAX_COMMUNICATION_LOGS = 100;
+const bluetoothService: IBluetoothService = new MockBluetoothService();
 
 type BluetoothContextValue = {
   bluetoothEnabled: boolean;
@@ -25,12 +36,21 @@ type BluetoothContextValue = {
   devices: BluetoothDeviceInfo[];
   connectedDevice: BluetoothDeviceInfo | null;
   connectionStatus: ConnectionStatus;
+  latestSensorData: SensorData | null;
+  communicationLogs: CommunicationLog[];
+  receivedMessages: CommunicationMessage[];
+  latestData: string | null;
+  communicationStatus: CommunicationStatus;
   error: string | null;
   requestPermissions: () => Promise<boolean>;
   startScan: () => Promise<void>;
   stopScan: () => void;
   connectDevice: (deviceId: string) => Promise<void>;
   disconnectDevice: () => Promise<void>;
+  writeCommand: (command: string) => Promise<void>;
+  startNotification: () => void;
+  stopNotification: () => void;
+  clearCommunicationLogs: () => void;
 };
 
 const BluetoothContext = createContext<BluetoothContextValue | undefined>(
@@ -38,7 +58,7 @@ const BluetoothContext = createContext<BluetoothContextValue | undefined>(
 );
 
 export function BluetoothProvider({ children }: PropsWithChildren) {
-  const [bluetoothEnabled, setBluetoothEnabled] = useState(false);
+  const [bluetoothEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [devices, setDevices] = useState<BluetoothDeviceInfo[]>([]);
@@ -46,16 +66,19 @@ export function BluetoothProvider({ children }: PropsWithChildren) {
     useState<BluetoothDeviceInfo | null>(null);
   const [connectionStatus, setConnectionStatus] =
     useState<ConnectionStatus>('disconnected');
+  const [communicationLogs, setCommunicationLogs] = useState<
+    CommunicationLog[]
+  >([]);
+  const [latestSensorData, setLatestSensorData] = useState<SensorData | null>(
+    null,
+  );
+  const [communicationStatus, setCommunicationStatus] =
+    useState<CommunicationStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const subscription = BluetoothService.onStateChange(state => {
-      setBluetoothEnabled(state === State.PoweredOn);
-    });
-
     return () => {
-      subscription.remove();
-      BluetoothService.destroy();
+      bluetoothService.destroy();
     };
   }, []);
 
@@ -64,26 +87,101 @@ export function BluetoothProvider({ children }: PropsWithChildren) {
     setError(null);
 
     try {
-      const granted = await BluetoothService.requestPermissions();
-
-      if (!granted) {
-        setError('Bluetooth permissions are required to scan for sensors.');
-      }
-
-      return granted;
-    } catch (permissionError) {
-      console.warn('Bluetooth permission request failed:', permissionError);
-      setError('Unable to request Bluetooth permissions.');
-      return false;
+      return true;
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const addCommunicationLog = useCallback(
+    (type: CommunicationMessage['type'], message: string) => {
+      const log: CommunicationMessage = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        type,
+        message,
+        timestamp: new Date(),
+      };
+
+      setCommunicationLogs(previousLogs =>
+        [...previousLogs, log].slice(-MAX_COMMUNICATION_LOGS),
+      );
+    },
+    [],
+  );
+
+  const clearCommunicationLogs = useCallback(() => {
+    setCommunicationLogs([]);
+  }, []);
+
+  const parseSensorData = useCallback((message: string): SensorData => {
+    const sensorData: SensorData = {
+      temperature: null,
+      humidity: null,
+      battery: null,
+      rawMessage: message,
+    };
+
+    message.split(/\r?\n/).forEach(line => {
+      const [key, rawValue] = line.split(':');
+      const numericValue = Number(rawValue?.trim());
+
+      if (!Number.isFinite(numericValue)) {
+        return;
+      }
+
+      switch (key.trim().toUpperCase()) {
+        case 'TEMP':
+        case 'TEMPERATURE':
+          sensorData.temperature = numericValue;
+          break;
+        case 'HUM':
+        case 'HUMIDITY':
+          sensorData.humidity = numericValue;
+          break;
+        case 'BAT':
+        case 'BATTERY':
+          sensorData.battery = numericValue;
+          break;
+      }
+    });
+
+    return sensorData;
+  }, []);
+
   const stopScan = useCallback(() => {
-    BluetoothService.stopScan();
+    bluetoothService.stopScan();
     setScanning(false);
   }, []);
+
+  const stopNotification = useCallback(() => {
+    bluetoothService.stopNotification();
+    setCommunicationStatus('idle');
+  }, []);
+
+  const startNotification = useCallback(() => {
+    setError(null);
+
+    try {
+      bluetoothService.startNotification(
+        data => {
+          setLatestSensorData(parseSensorData(data));
+          setCommunicationStatus('listening');
+          addCommunicationLog('received', data);
+        },
+        notificationError => {
+          console.warn('Bluetooth notification failed:', notificationError.message);
+          setError(notificationError.message);
+          setCommunicationStatus('error');
+        },
+      );
+
+      setCommunicationStatus('listening');
+    } catch (notificationError) {
+      console.warn('Unable to start Bluetooth notifications:', notificationError);
+      setError('Unable to start Bluetooth notifications.');
+      setCommunicationStatus('error');
+    }
+  }, [addCommunicationLog, parseSensorData]);
 
   const startScan = useCallback(async () => {
     setError(null);
@@ -94,17 +192,9 @@ export function BluetoothProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    const enabled = await BluetoothService.isBluetoothPoweredOn();
-    setBluetoothEnabled(enabled);
-
-    if (!enabled) {
-      setError('Bluetooth is turned off. Enable Bluetooth to scan for sensors.');
-      return;
-    }
-
     try {
       setScanning(true);
-      BluetoothService.startScan(
+      bluetoothService.startScan(
         updatedDevices => {
           setDevices(updatedDevices);
         },
@@ -128,41 +218,66 @@ export function BluetoothProvider({ children }: PropsWithChildren) {
       stopScan();
 
       try {
-        const device = await BluetoothService.connectToDevice(
-          deviceId,
-          disconnectedDevice => {
-            console.log('Bluetooth device disconnected:', disconnectedDevice?.id);
-            setConnectedDevice(null);
-            setConnectionStatus('disconnected');
-          },
-        );
+        const device = await bluetoothService.connect(deviceId);
 
         setConnectedDevice(device);
         setConnectionStatus('connected');
+        setLatestSensorData(null);
+        startNotification();
       } catch (connectionError) {
         console.warn('Bluetooth connection failed:', connectionError);
         setError('Unable to connect to the selected device.');
         setConnectedDevice(null);
         setConnectionStatus('disconnected');
+        setLatestSensorData(null);
+        setCommunicationStatus('error');
       }
     },
-    [stopScan],
+    [startNotification, stopScan],
   );
 
   const disconnectDevice = useCallback(async () => {
     setError(null);
-    setConnectionStatus('disconnecting');
 
     try {
-      await BluetoothService.disconnectDevice();
+      stopNotification();
+      await bluetoothService.disconnect();
       setConnectedDevice(null);
       setConnectionStatus('disconnected');
+      setLatestSensorData(null);
     } catch (disconnectError) {
       console.warn('Bluetooth disconnect failed:', disconnectError);
       setError('Unable to disconnect from the selected device.');
       setConnectionStatus(connectedDevice ? 'connected' : 'disconnected');
+      setCommunicationStatus('error');
     }
-  }, [connectedDevice]);
+  }, [connectedDevice, stopNotification]);
+
+  const writeCommand = useCallback(
+    async (command: string) => {
+      setError(null);
+      setCommunicationStatus('sending');
+
+      try {
+        const response = await bluetoothService.sendCommand(command);
+        addCommunicationLog('sent', command);
+        if (response) {
+          setLatestSensorData(parseSensorData(response));
+          addCommunicationLog('received', response);
+        }
+        setCommunicationStatus('listening');
+      } catch (writeError) {
+        console.warn('Bluetooth command failed:', writeError);
+        setError('Unable to send Bluetooth command.');
+        setCommunicationStatus('error');
+        throw writeError;
+      }
+    },
+    [addCommunicationLog, parseSensorData],
+  );
+
+  const latestData = latestSensorData?.rawMessage ?? null;
+  const receivedMessages = communicationLogs;
 
   const value = useMemo(
     () => ({
@@ -172,12 +287,21 @@ export function BluetoothProvider({ children }: PropsWithChildren) {
       devices,
       connectedDevice,
       connectionStatus,
+      latestSensorData,
+      communicationLogs,
+      receivedMessages,
+      latestData,
+      communicationStatus,
       error,
       requestPermissions,
       startScan,
       stopScan,
       connectDevice,
       disconnectDevice,
+      writeCommand,
+      startNotification,
+      stopNotification,
+      clearCommunicationLogs,
     }),
     [
       bluetoothEnabled,
@@ -186,12 +310,21 @@ export function BluetoothProvider({ children }: PropsWithChildren) {
       devices,
       connectedDevice,
       connectionStatus,
+      latestSensorData,
+      communicationLogs,
+      receivedMessages,
+      latestData,
+      communicationStatus,
       error,
       requestPermissions,
       startScan,
       stopScan,
       connectDevice,
       disconnectDevice,
+      writeCommand,
+      startNotification,
+      stopNotification,
+      clearCommunicationLogs,
     ],
   );
 

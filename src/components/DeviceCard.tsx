@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text } from 'react-native-paper';
 import { colors } from '../constants/colors';
 import { theme } from '../constants/theme';
-import { BluetoothDeviceInfo } from '../services/BluetoothService';
+import { BluetoothDeviceInfo } from '../services/interfaces/IBluetoothService';
 
 type DeviceCardProps = {
   device: BluetoothDeviceInfo;

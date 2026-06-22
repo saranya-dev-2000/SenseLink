@@ -5,7 +5,7 @@ import { DeviceCard } from '../../components/DeviceCard';
 import { colors } from '../../constants/colors';
 import { theme } from '../../constants/theme';
 import { useBluetooth } from '../../context/BluetoothContext';
-import { BluetoothDeviceInfo } from '../../services/BluetoothService';
+import { BluetoothDeviceInfo } from '../../services/interfaces/IBluetoothService';
 
 export function ScanScreen() {
   const {
@@ -30,9 +30,7 @@ export function ScanScreen() {
       return;
     }
 
-    startScan().catch(scanError => {
-      console.warn('Scan action failed:', scanError);
-    });
+    startScan().catch(() => undefined);
   }, [scanning, startScan, stopScan]);
 
   const renderDevice: ListRenderItem<BluetoothDeviceInfo> = ({ item }) => (
@@ -41,14 +39,10 @@ export function ScanScreen() {
       isConnected={connectedDevice?.id === item.id}
       isConnecting={isConnecting && connectedDevice?.id !== item.id}
       onConnect={deviceId => {
-        connectDevice(deviceId).catch(connectionError => {
-          console.warn('Connect action failed:', connectionError);
-        });
+        connectDevice(deviceId).catch(() => undefined);
       }}
       onDisconnect={() => {
-        disconnectDevice().catch(disconnectError => {
-          console.warn('Disconnect action failed:', disconnectError);
-        });
+        disconnectDevice().catch(() => undefined);
       }}
     />
   );

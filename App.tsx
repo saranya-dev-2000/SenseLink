@@ -1,3 +1,5 @@
+import type { ComponentProps } from 'react';
+import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 import { StatusBar, StyleSheet, View } from 'react-native';
 import { MD3DarkTheme, PaperProvider } from 'react-native-paper';
 import {
@@ -6,7 +8,7 @@ import {
 } from 'react-native-safe-area-context';
 import { colors } from './src/constants/colors';
 import { BluetoothProvider } from './src/context/BluetoothContext';
-import { ScanScreen } from './src/screens/Scan/ScanScreen';
+import { AppNavigator } from './src/navigation/AppNavigator';
 
 const paperTheme = {
   ...MD3DarkTheme,
@@ -21,10 +23,24 @@ const paperTheme = {
   },
 };
 
+type PaperProviderSettings = ComponentProps<typeof PaperProvider>['settings'];
+type MaterialDesignIconName = ComponentProps<typeof MaterialDesignIcons>['name'];
+
+const paperSettings: PaperProviderSettings = {
+  icon: ({ name, color, size, testID }) => (
+    <MaterialDesignIcons
+      name={name as MaterialDesignIconName}
+      color={color}
+      size={size}
+      testID={testID}
+    />
+  ),
+};
+
 function App() {
   return (
     <SafeAreaProvider>
-      <PaperProvider theme={paperTheme}>
+      <PaperProvider theme={paperTheme} settings={paperSettings}>
         <BluetoothProvider>
           <StatusBar
             barStyle="light-content"
@@ -49,7 +65,7 @@ function AppContent() {
           paddingTop: safeAreaInsets.top,
         },
       ]}>
-      <ScanScreen />
+      <AppNavigator />
     </View>
   );
 }
