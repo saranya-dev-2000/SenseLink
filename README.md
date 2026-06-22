@@ -17,7 +17,13 @@ Monitor sensor values and send commands.
 ### Communication Logs
 Track all sent and received messages.
 
-> Add screenshots in `/assets/screenshots`
+## 📱 App Screenshots
+
+<p align="center">
+  <img src="assets/scan.jpeg" width="250" alt="Scan Screen" />
+  <img src="assets/control.jpeg" width="250" alt="Control Screen" />
+  <img src="assets/logs.jpeg" width="250" alt="Logs Screen" />
+</p>
 
 ---
 
